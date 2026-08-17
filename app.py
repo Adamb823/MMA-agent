@@ -1,24 +1,36 @@
 import tkinter as tk
 from tkinter import ttk
 
-from constants import SCOUTING_GROUP_SIZE, STAT_KEYS
 from generation import generate_scouting_group
+
+# Stuff from my other files that this page needs
+from constants import SCOUTING_GROUP_SIZE, STARTING_MONEY, STAT_KEYS, TRAINING_COST
 
 
 class App(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
 
-        self.title("MMA Agent - Version 2")
-        self.geometry("420x650")
+        self.title("MMA Agent - Version 3")
+        self.geometry("440x880")
 
+        # Main game variables
         self.scouted_fighters = generate_scouting_group(SCOUTING_GROUP_SIZE)
         self.current_fighter_number = 0
         self.shortlist = []
         self.stat_labels = {}
 
-        title_label = ttk.Label(self, text="Scouting Report")
-        title_label.pack(pady=(18, 4))
+        self.money = STARTING_MONEY
+        self.week = 1
+        self.signed_fighter = None
+        self.trained_this_week = False
+
+        # Top information
+        self.agency_label = ttk.Label(self, text="")
+        self.agency_label.pack(pady=(16, 4))
+
+        heading = ttk.Label(self, text="Scouting Report")
+        heading.pack(pady=(8, 4))
 
         self.fighter_number_label = ttk.Label(self, text="")
         self.fighter_number_label.pack()
@@ -29,101 +41,144 @@ class App(tk.Tk):
         self.info_label = ttk.Label(self, text="")
         self.info_label.pack(pady=(0, 14))
 
-        stats_box = ttk.LabelFrame(self, text="Stats", padding=12)
-        stats_box.pack(fill="x", padx=24)
+        # Box that shows all of the stats
+        stats_frame = ttk.LabelFrame(self, text="Stats", padding=12)
+        stats_frame.pack(fill="x", padx=24)
 
-        for stat in STAT_KEYS:
-            stat_row = ttk.Frame(stats_box)
-            stat_row.pack(fill="x", pady=2)
+        for stat_name in STAT_KEYS:
+            row = ttk.Frame(stats_frame)
+            row.pack(fill="x", pady=2)
 
-            stat_name_label = ttk.Label(stat_row, text=stat.capitalize(), width=12)
-            stat_name_label.pack(side="left")
+            name_text = ttk.Label(row, text=stat_name.capitalize(), width=12)
+            name_text.pack(side="left")
 
-            stat_number_label = ttk.Label(stat_row, text="0")
-            stat_number_label.pack(side="left")
+            number_text = ttk.Label(row, text="0")
+            number_text.pack(side="left")
 
-            self.stat_labels[stat] = stat_number_label
+            # Saving the label means I can change the number later
+            self.stat_labels[stat_name] = number_text
 
         self.overall_label = ttk.Label(self, text="Overall Rating: 0")
-        self.overall_label.pack(pady=(16, 3))
+        self.overall_label.pack(pady=(14, 3))
 
         self.potential_label = ttk.Label(self, text="Potential: 0")
         self.potential_label.pack(pady=3)
 
         self.value_label = ttk.Label(self, text="Estimated Value: $0")
-        self.value_label.pack(pady=(3, 14))
+        self.value_label.pack(pady=(3, 10))
 
-        browse_frame = ttk.Frame(self)
-        browse_frame.pack(pady=5)
+        # Previous and next buttons go on the same row
+        browse_buttons = ttk.Frame(self)
+        browse_buttons.pack(pady=3)
 
         previous_button = ttk.Button(
-            browse_frame, text="Previous", command=self.previous_fighter
+            browse_buttons, text="Previous", command=self.previous_fighter
         )
         previous_button.pack(side="left", padx=5)
 
-        next_button = ttk.Button(browse_frame, text="Next", command=self.next_fighter)
+        next_button = ttk.Button(browse_buttons, text="Next", command=self.next_fighter)
         next_button.pack(side="left", padx=5)
 
-        shortlist_button = ttk.Button(
+        add_button = ttk.Button(
             self, text="Add to Shortlist", command=self.add_to_shortlist
         )
-        shortlist_button.pack(pady=5)
+        add_button.pack(pady=3)
 
-        view_shortlist_button = ttk.Button(
+        shortlist_button = ttk.Button(
             self, text="View Shortlist", command=self.open_shortlist_window
         )
-        view_shortlist_button.pack(pady=5)
+        shortlist_button.pack(pady=3)
 
-        new_group_button = ttk.Button(
+        scout_button = ttk.Button(
             self, text="Scout New Group", command=self.scout_new_group
         )
-        new_group_button.pack(pady=5)
+        scout_button.pack(pady=3)
 
-        self.message_label = ttk.Label(self, text="")
-        self.message_label.pack(pady=10)
+        sign_button = ttk.Button(
+            self, text="Sign Current Fighter", command=self.sign_fighter
+        )
+        sign_button.pack(pady=(3, 12))
 
+        # Agency section near the bottom
+        agency_frame = ttk.LabelFrame(self, text="Your Agency", padding=12)
+        agency_frame.pack(fill="x", padx=24)
+
+        self.signed_fighter_label = ttk.Label(
+            agency_frame, text="No fighter signed yet."
+        )
+        self.signed_fighter_label.pack(pady=3)
+
+        training_text = "Train Fighter ($" + format(TRAINING_COST, ",") + ")"
+        train_button = ttk.Button(
+            agency_frame, text=training_text, command=self.train_fighter
+        )
+        train_button.pack(pady=4)
+
+        next_week_button = ttk.Button(
+            agency_frame, text="Advance Week", command=self.advance_week
+        )
+        next_week_button.pack(pady=4)
+
+        self.message_label = ttk.Label(self, text="", wraplength=390)
+        self.message_label.pack(pady=12)
+
+        # Put the first fighter and agency details onto the screen
         self.update_fighter_display()
+        self.update_agency_display()
 
     def get_current_fighter(self):
-        return self.scouted_fighters[self.current_fighter_number]
+        fighter = self.scouted_fighters[self.current_fighter_number]
+        return fighter
 
     def update_fighter_display(self):
         fighter = self.get_current_fighter()
 
-        fighter_position = self.current_fighter_number + 1
-        fighter_total = len(self.scouted_fighters)
+        current_number = self.current_fighter_number + 1
+        total_fighters = len(self.scouted_fighters)
 
-        self.fighter_number_label.config(
-            text="Fighter " + str(fighter_position) + " of " + str(fighter_total)
-        )
+        number_message = "Fighter " + str(current_number)
+        number_message = number_message + " of " + str(total_fighters)
+        self.fighter_number_label.config(text=number_message)
 
         self.name_label.config(text=fighter.name)
 
-        fighter_info = (
-            "Age "
-            + str(fighter.age)
-            + " | "
-            + fighter.weight_class
-            + " | "
-            + fighter.archetype
-        )
+        info = "Age " + str(fighter.age)
+        info = info + " | " + fighter.weight_class
+        info = info + " | " + fighter.archetype
+        self.info_label.config(text=info)
 
-        self.info_label.config(text=fighter_info)
+        for stat_name in STAT_KEYS:
+            score = fighter.stats[stat_name]
+            label_to_change = self.stat_labels[stat_name]
+            label_to_change.config(text=str(score))
 
-        for stat in STAT_KEYS:
-            stat_score = fighter.stats[stat]
-            self.stat_labels[stat].config(text=str(stat_score))
+        overall = fighter.get_overall()
+        value = fighter.get_value()
 
-        overall_score = fighter.get_overall()
-        fighter_value = fighter.get_value()
-
-        self.overall_label.config(text="Overall Rating: " + str(overall_score))
+        self.overall_label.config(text="Overall Rating: " + str(overall))
         self.potential_label.config(text="Potential: " + str(fighter.potential))
-        self.value_label.config(text="Estimated Value: $" + format(fighter_value, ","))
+        self.value_label.config(text="Estimated Value: $" + format(value, ","))
+
+    def update_agency_display(self):
+        money_text = format(self.money, ",")
+        top_text = "Week " + str(self.week) + " | Money: $" + money_text
+        self.agency_label.config(text=top_text)
+
+        if self.signed_fighter is None:
+            self.signed_fighter_label.config(text="No fighter signed yet.")
+        else:
+            fighter = self.signed_fighter
+
+            signed_text = fighter.name
+            signed_text = signed_text + " | Overall " + str(fighter.get_overall())
+            signed_text = signed_text + " | " + fighter.weight_class
+
+            self.signed_fighter_label.config(text=signed_text)
 
     def previous_fighter(self):
         self.current_fighter_number = self.current_fighter_number - 1
 
+        # Go back to the end if the player goes past the first fighter
         if self.current_fighter_number < 0:
             self.current_fighter_number = len(self.scouted_fighters) - 1
 
@@ -133,6 +188,7 @@ class App(tk.Tk):
     def next_fighter(self):
         self.current_fighter_number = self.current_fighter_number + 1
 
+        # Go back to fighter 1 after reaching the end
         if self.current_fighter_number >= len(self.scouted_fighters):
             self.current_fighter_number = 0
 
@@ -143,39 +199,102 @@ class App(tk.Tk):
         fighter = self.get_current_fighter()
 
         if fighter in self.shortlist:
-            self.message_label.config(text=fighter.name + " is already shortlisted.")
+            message = fighter.name + " is already shortlisted."
+            self.message_label.config(text=message)
         else:
             self.shortlist.append(fighter)
-            self.message_label.config(text=fighter.name + " added to shortlist.")
+            message = fighter.name + " added to shortlist."
+            self.message_label.config(text=message)
 
     def scout_new_group(self):
-        self.scouted_fighters = generate_scouting_group(SCOUTING_GROUP_SIZE)
+        new_fighters = generate_scouting_group(SCOUTING_GROUP_SIZE)
+        self.scouted_fighters = new_fighters
         self.current_fighter_number = 0
 
         self.message_label.config(text="A new group of fighters has been scouted.")
         self.update_fighter_display()
+
+    def sign_fighter(self):
+        fighter = self.get_current_fighter()
+        cost = fighter.get_value()
+
+        if self.signed_fighter is not None:
+            self.message_label.config(text="You already have a signed fighter.")
+            return
+
+        if self.money < cost:
+            self.message_label.config(text="You do not have enough money.")
+            return
+
+        self.signed_fighter = fighter
+        self.money = self.money - cost
+
+        message = fighter.name + " has joined your agency."
+        self.message_label.config(text=message)
+        self.update_agency_display()
+
+    def train_fighter(self):
+        if self.signed_fighter is None:
+            self.message_label.config(text="You need to sign a fighter first.")
+            return
+
+        if self.trained_this_week == True:
+            self.message_label.config(
+                text="Your fighter has already trained this week."
+            )
+            return
+
+        if self.money < TRAINING_COST:
+            self.message_label.config(text="You do not have enough money for training.")
+            return
+
+        # Start by acting like the first stat is the lowest
+        lowest_stat = STAT_KEYS[0]
+
+        # Check every stat and replace it when a lower one is found
+        for stat_name in STAT_KEYS:
+            current_score = self.signed_fighter.stats[stat_name]
+            lowest_score = self.signed_fighter.stats[lowest_stat]
+
+            if current_score < lowest_score:
+                lowest_stat = stat_name
+
+        old_score = self.signed_fighter.stats[lowest_stat]
+        self.signed_fighter.stats[lowest_stat] = old_score + 1
+
+        self.money = self.money - TRAINING_COST
+        self.trained_this_week = True
+
+        message = self.signed_fighter.name + " improved "
+        message = message + lowest_stat + " by 1 point."
+        self.message_label.config(text=message)
+
+        self.update_fighter_display()
+        self.update_agency_display()
+
+    def advance_week(self):
+        self.week = self.week + 1
+        self.trained_this_week = False
+
+        self.message_label.config(text="Week advanced. Your fighter can train again.")
+        self.update_agency_display()
 
     def open_shortlist_window(self):
         shortlist_window = tk.Toplevel(self)
         shortlist_window.title("Fighter Shortlist")
         shortlist_window.geometry("420x300")
 
-        title_label = ttk.Label(shortlist_window, text="Your Shortlist")
-        title_label.pack(pady=(16, 8))
+        heading = ttk.Label(shortlist_window, text="Your Shortlist")
+        heading.pack(pady=(16, 8))
 
         shortlist_box = tk.Listbox(shortlist_window, width=58, height=9)
         shortlist_box.pack(padx=16, pady=5)
 
         for fighter in self.shortlist:
-            fighter_text = (
-                fighter.name
-                + " | OVR "
-                + str(fighter.get_overall())
-                + " | POT "
-                + str(fighter.potential)
-                + " | $"
-                + format(fighter.get_value(), ",")
-            )
+            fighter_text = fighter.name
+            fighter_text = fighter_text + " | OVR " + str(fighter.get_overall())
+            fighter_text = fighter_text + " | POT " + str(fighter.potential)
+            fighter_text = fighter_text + " | $" + format(fighter.get_value(), ",")
 
             shortlist_box.insert(tk.END, fighter_text)
 
@@ -190,12 +309,12 @@ class App(tk.Tk):
         remove_button.pack(pady=8)
 
     def remove_shortlisted_fighter(self, shortlist_box):
-        selected_fighters = shortlist_box.curselection()
+        selected = shortlist_box.curselection()
 
-        if len(selected_fighters) == 0:
+        if len(selected) == 0:
             return
 
-        selected_number = selected_fighters[0]
+        selected_number = selected[0]
 
         if len(self.shortlist) == 0:
             return
@@ -203,6 +322,5 @@ class App(tk.Tk):
         removed_fighter = self.shortlist.pop(selected_number)
         shortlist_box.delete(selected_number)
 
-        self.message_label.config(
-            text=removed_fighter.name + " removed from shortlist."
-        )
+        message = removed_fighter.name + " removed from shortlist."
+        self.message_label.config(text=message)
