@@ -1,10 +1,11 @@
 class Fighter:
-    def __init__(self, name, age, weight_class, archetype, stats):
+    def __init__(self, name, age, weight_class, archetype, stats, potential):
         self.name = name
         self.age = age
         self.weight_class = weight_class
         self.archetype = archetype
         self.stats = stats
+        self.potential = potential
 
     def get_overall(self):
         total = 0
@@ -15,3 +16,14 @@ class Fighter:
         average = total / len(self.stats)
 
         return round(average)
+
+    def get_value(self):
+        overall = self.get_overall()
+
+        value = overall * 1200
+        value = value + self.potential * 500
+
+        if self.age <= 23:
+            value = value + 10000
+
+        return value
