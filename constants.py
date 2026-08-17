@@ -13,6 +13,8 @@ ARCHETYPES = ["Striker", "Wrestler", "Grappler", "All-Rounder"]
 
 STAT_KEYS = ["striking", "grappling", "wrestling", "cardio", "power", "chin"]
 
+SCOUTING_GROUP_SIZE = 3
+
 FIRST_NAMES = [
     "Jake",
     "Miguel",
