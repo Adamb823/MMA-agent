@@ -14,6 +14,8 @@ ARCHETYPES = ["Striker", "Wrestler", "Grappler", "All-Rounder"]
 STAT_KEYS = ["striking", "grappling", "wrestling", "cardio", "power", "chin"]
 
 SCOUTING_GROUP_SIZE = 3
+STARTING_MONEY = 120000
+TRAINING_COST = 2000
 
 FIRST_NAMES = [
     "Jake",
