@@ -1,6 +1,5 @@
 import random
 import tkinter as tk
-from tkinter import ttk
 
 # Stuff from my other files that this page needs
 from constants import (
@@ -20,8 +19,18 @@ class App(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
 
-        self.title("MMA Agent - Version 4")
-        self.geometry("440x950")
+        self.title("MMA Agent - Version 5")
+        self.geometry("520x900")
+        self.configure(bg="#202124")
+        self.resizable(False, False)
+
+        # Colours for the game
+        # I kept them here because it was easier to change them while testing
+        dark_colour = "#202124"
+        panel_colour = "#2b2d31"
+        red_colour = "#b52b2b"
+        light_colour = "#eeeeee"
+        grey_colour = "#b7b7b7"
 
         # Main game variables
         self.scouted_fighters = generate_scouting_group(SCOUTING_GROUP_SIZE)
@@ -39,110 +48,311 @@ class App(tk.Tk):
         self.losses = 0
         self.fought_this_week = False
 
-        # Top information
-        self.agency_label = ttk.Label(self, text="")
-        self.agency_label.pack(pady=(16, 4))
+        # Header at the top
+        top_frame = tk.Frame(self, bg="#151515", height=65)
+        top_frame.pack(fill="x")
+        top_frame.pack_propagate(False)
 
-        heading = ttk.Label(self, text="Scouting Report")
-        heading.pack(pady=(8, 4))
+        game_title = tk.Label(
+            top_frame,
+            text="MMA AGENT",
+            bg="#151515",
+            fg="white",
+            font=("Arial", 20, "bold"),
+        )
+        game_title.pack(side="left", padx=18, pady=15)
 
-        self.fighter_number_label = ttk.Label(self, text="")
-        self.fighter_number_label.pack()
+        self.agency_label = tk.Label(
+            top_frame,
+            text="",
+            bg="#151515",
+            fg="#dddddd",
+            font=("Arial", 10),
+        )
+        self.agency_label.pack(side="right", padx=18)
 
-        self.name_label = ttk.Label(self, text="")
-        self.name_label.pack(pady=(8, 0))
+        # Main scouting area
+        scouting_frame = tk.Frame(self, bg=dark_colour)
+        scouting_frame.pack(fill="x", padx=18, pady=(15, 6))
 
-        self.info_label = ttk.Label(self, text="")
-        self.info_label.pack(pady=(0, 14))
+        heading = tk.Label(
+            scouting_frame,
+            text="SCOUTING REPORT",
+            bg=dark_colour,
+            fg=light_colour,
+            font=("Arial", 14, "bold"),
+        )
+        heading.pack(anchor="w")
+
+        self.fighter_number_label = tk.Label(
+            scouting_frame,
+            text="",
+            bg=dark_colour,
+            fg=grey_colour,
+            font=("Arial", 9),
+        )
+        self.fighter_number_label.pack(anchor="w", pady=(1, 8))
+
+        # Fighter card
+        fighter_card = tk.Frame(
+            self,
+            bg=panel_colour,
+            highlightbackground="#444444",
+            highlightthickness=1,
+        )
+        fighter_card.pack(fill="x", padx=18)
+
+        self.name_label = tk.Label(
+            fighter_card,
+            text="",
+            bg=panel_colour,
+            fg="white",
+            font=("Arial", 18, "bold"),
+        )
+        self.name_label.pack(pady=(14, 2))
+
+        self.info_label = tk.Label(
+            fighter_card,
+            text="",
+            bg=panel_colour,
+            fg="#c7c7c7",
+            font=("Arial", 10),
+        )
+        self.info_label.pack(pady=(0, 12))
+
+        line = tk.Frame(fighter_card, bg="#484848", height=1)
+        line.pack(fill="x", padx=16, pady=(0, 10))
 
         # Box that shows all of the stats
-        stats_frame = ttk.LabelFrame(self, text="Stats", padding=12)
-        stats_frame.pack(fill="x", padx=24)
+        stats_frame = tk.Frame(fighter_card, bg=panel_colour)
+        stats_frame.pack(fill="x", padx=22)
 
         for stat_name in STAT_KEYS:
-            row = ttk.Frame(stats_frame)
-            row.pack(fill="x", pady=2)
+            row = tk.Frame(stats_frame, bg=panel_colour)
+            row.pack(fill="x", pady=3)
 
-            name_text = ttk.Label(row, text=stat_name.capitalize(), width=12)
+            name_text = tk.Label(
+                row,
+                text=stat_name.capitalize(),
+                width=14,
+                anchor="w",
+                bg=panel_colour,
+                fg="#dddddd",
+                font=("Arial", 10),
+            )
             name_text.pack(side="left")
 
-            number_text = ttk.Label(row, text="0")
-            number_text.pack(side="left")
+            number_text = tk.Label(
+                row,
+                text="0",
+                width=4,
+                bg="#18191b",
+                fg="white",
+                font=("Arial", 10, "bold"),
+            )
+            number_text.pack(side="right")
 
             # Saving the label means I can change the number later
             self.stat_labels[stat_name] = number_text
 
-        self.overall_label = ttk.Label(self, text="Overall Rating: 0")
-        self.overall_label.pack(pady=(14, 3))
+        rating_frame = tk.Frame(fighter_card, bg="#242529")
+        rating_frame.pack(fill="x", padx=16, pady=(13, 12))
 
-        self.potential_label = ttk.Label(self, text="Potential: 0")
-        self.potential_label.pack(pady=3)
+        self.overall_label = tk.Label(
+            rating_frame,
+            text="Overall Rating: 0",
+            bg="#242529",
+            fg="white",
+            font=("Arial", 10, "bold"),
+        )
+        self.overall_label.pack(side="left", padx=10, pady=9)
 
-        self.value_label = ttk.Label(self, text="Estimated Value: $0")
-        self.value_label.pack(pady=(3, 10))
+        self.potential_label = tk.Label(
+            rating_frame,
+            text="Potential: 0",
+            bg="#242529",
+            fg="#dddddd",
+            font=("Arial", 10),
+        )
+        self.potential_label.pack(side="left", padx=8)
+
+        self.value_label = tk.Label(
+            fighter_card,
+            text="Estimated Value: $0",
+            bg=panel_colour,
+            fg="#efc65a",
+            font=("Arial", 11, "bold"),
+        )
+        self.value_label.pack(pady=(0, 13))
 
         # Previous and next buttons go on the same row
-        browse_buttons = ttk.Frame(self)
-        browse_buttons.pack(pady=3)
+        browse_buttons = tk.Frame(self, bg=dark_colour)
+        browse_buttons.pack(pady=(11, 4))
 
-        previous_button = ttk.Button(
-            browse_buttons, text="Previous", command=self.previous_fighter
+        previous_button = tk.Button(
+            browse_buttons,
+            text="< Previous",
+            width=12,
+            command=self.previous_fighter,
+            bg="#3c3f44",
+            fg="white",
+            activebackground="#4a4d52",
+            activeforeground="white",
+            relief="flat",
         )
         previous_button.pack(side="left", padx=5)
 
-        next_button = ttk.Button(browse_buttons, text="Next", command=self.next_fighter)
+        next_button = tk.Button(
+            browse_buttons,
+            text="Next >",
+            width=12,
+            command=self.next_fighter,
+            bg="#3c3f44",
+            fg="white",
+            activebackground="#4a4d52",
+            activeforeground="white",
+            relief="flat",
+        )
         next_button.pack(side="left", padx=5)
 
-        add_button = ttk.Button(
-            self, text="Add to Shortlist", command=self.add_to_shortlist
-        )
-        add_button.pack(pady=3)
+        # Scout buttons
+        scout_actions = tk.Frame(self, bg=dark_colour)
+        scout_actions.pack(pady=4)
 
-        shortlist_button = ttk.Button(
-            self, text="View Shortlist", command=self.open_shortlist_window
+        add_button = tk.Button(
+            scout_actions,
+            text="Add to Shortlist",
+            width=16,
+            command=self.add_to_shortlist,
+            bg="#3c3f44",
+            fg="white",
+            relief="flat",
         )
-        shortlist_button.pack(pady=3)
+        add_button.pack(side="left", padx=4)
 
-        scout_button = ttk.Button(
-            self, text="Scout New Group", command=self.scout_new_group
+        shortlist_button = tk.Button(
+            scout_actions,
+            text="View Shortlist",
+            width=16,
+            command=self.open_shortlist_window,
+            bg="#3c3f44",
+            fg="white",
+            relief="flat",
         )
-        scout_button.pack(pady=3)
+        shortlist_button.pack(side="left", padx=4)
 
-        sign_button = ttk.Button(
-            self, text="Sign Current Fighter", command=self.sign_fighter
+        bottom_scout_actions = tk.Frame(self, bg=dark_colour)
+        bottom_scout_actions.pack(pady=(2, 12))
+
+        scout_button = tk.Button(
+            bottom_scout_actions,
+            text="Scout New Group",
+            width=16,
+            command=self.scout_new_group,
+            bg="#3c3f44",
+            fg="white",
+            relief="flat",
         )
-        sign_button.pack(pady=(3, 12))
+        scout_button.pack(side="left", padx=4)
+
+        sign_button = tk.Button(
+            bottom_scout_actions,
+            text="Sign Fighter",
+            width=16,
+            command=self.sign_fighter,
+            bg=red_colour,
+            fg="white",
+            activebackground="#8f2323",
+            activeforeground="white",
+            relief="flat",
+        )
+        sign_button.pack(side="left", padx=4)
 
         # Agency section near the bottom
-        agency_frame = ttk.LabelFrame(self, text="Your Agency", padding=12)
-        agency_frame.pack(fill="x", padx=24)
-
-        self.signed_fighter_label = ttk.Label(
-            agency_frame, text="No fighter signed yet."
+        agency_frame = tk.Frame(
+            self,
+            bg=panel_colour,
+            highlightbackground="#444444",
+            highlightthickness=1,
         )
-        self.signed_fighter_label.pack(pady=3)
+        agency_frame.pack(fill="x", padx=18, pady=(0, 8))
 
-        self.record_label = ttk.Label(agency_frame, text="")
-        self.record_label.pack(pady=(0, 3))
-
-        training_text = "Train Fighter ($" + format(TRAINING_COST, ",") + ")"
-        train_button = ttk.Button(
-            agency_frame, text=training_text, command=self.train_fighter
+        agency_heading = tk.Label(
+            agency_frame,
+            text="YOUR AGENCY",
+            bg=panel_colour,
+            fg="white",
+            font=("Arial", 12, "bold"),
         )
-        train_button.pack(pady=4)
+        agency_heading.pack(anchor="w", padx=14, pady=(12, 4))
 
-        fight_button = ttk.Button(
-            agency_frame, text="Book a Fight", command=self.book_fight
+        self.signed_fighter_label = tk.Label(
+            agency_frame,
+            text="No fighter signed yet.",
+            bg=panel_colour,
+            fg="#dddddd",
+            font=("Arial", 10),
         )
-        fight_button.pack(pady=4)
+        self.signed_fighter_label.pack(anchor="w", padx=14, pady=2)
 
-        next_week_button = ttk.Button(
-            agency_frame, text="Advance Week", command=self.advance_week
+        self.record_label = tk.Label(
+            agency_frame,
+            text="",
+            bg=panel_colour,
+            fg="#aaaaaa",
+            font=("Arial", 9),
         )
-        next_week_button.pack(pady=4)
+        self.record_label.pack(anchor="w", padx=14, pady=(0, 7))
 
-        self.message_label = ttk.Label(self, text="", wraplength=390)
-        self.message_label.pack(pady=12)
+        agency_buttons = tk.Frame(agency_frame, bg=panel_colour)
+        agency_buttons.pack(pady=(3, 13))
+
+        training_text = "Train ($" + format(TRAINING_COST, ",") + ")"
+        train_button = tk.Button(
+            agency_buttons,
+            text=training_text,
+            width=12,
+            command=self.train_fighter,
+            bg="#3c3f44",
+            fg="white",
+            relief="flat",
+        )
+        train_button.pack(side="left", padx=3)
+
+        fight_button = tk.Button(
+            agency_buttons,
+            text="Book Fight",
+            width=12,
+            command=self.book_fight,
+            bg=red_colour,
+            fg="white",
+            activebackground="#8f2323",
+            activeforeground="white",
+            relief="flat",
+        )
+        fight_button.pack(side="left", padx=3)
+
+        next_week_button = tk.Button(
+            agency_buttons,
+            text="Next Week",
+            width=12,
+            command=self.advance_week,
+            bg="#3c3f44",
+            fg="white",
+            relief="flat",
+        )
+        next_week_button.pack(side="left", padx=3)
+
+        # Message area so the player can see what just happened
+        self.message_label = tk.Label(
+            self,
+            text="",
+            wraplength=450,
+            bg=dark_colour,
+            fg="#e6e6e6",
+            font=("Arial", 9),
+        )
+        self.message_label.pack(pady=(5, 8))
 
         # Put the first fighter and agency details onto the screen
         self.update_fighter_display()
@@ -364,12 +574,31 @@ class App(tk.Tk):
     def open_shortlist_window(self):
         shortlist_window = tk.Toplevel(self)
         shortlist_window.title("Fighter Shortlist")
-        shortlist_window.geometry("420x300")
+        shortlist_window.geometry("460x330")
+        shortlist_window.configure(bg="#202124")
+        shortlist_window.resizable(False, False)
 
-        heading = ttk.Label(shortlist_window, text="Your Shortlist")
+        heading = tk.Label(
+            shortlist_window,
+            text="YOUR SHORTLIST",
+            bg="#202124",
+            fg="white",
+            font=("Arial", 14, "bold"),
+        )
         heading.pack(pady=(16, 8))
 
-        shortlist_box = tk.Listbox(shortlist_window, width=58, height=9)
+        shortlist_box = tk.Listbox(
+            shortlist_window,
+            width=58,
+            height=10,
+            bg="#2b2d31",
+            fg="white",
+            selectbackground="#b52b2b",
+            selectforeground="white",
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground="#444444",
+        )
         shortlist_box.pack(padx=16, pady=5)
 
         for fighter in self.shortlist:
@@ -383,12 +612,17 @@ class App(tk.Tk):
         if len(self.shortlist) == 0:
             shortlist_box.insert(tk.END, "No fighters have been shortlisted yet.")
 
-        remove_button = ttk.Button(
+        remove_button = tk.Button(
             shortlist_window,
             text="Remove Selected Fighter",
             command=lambda: self.remove_shortlisted_fighter(shortlist_box),
+            bg="#b52b2b",
+            fg="white",
+            activebackground="#8f2323",
+            activeforeground="white",
+            relief="flat",
         )
-        remove_button.pack(pady=8)
+        remove_button.pack(pady=10)
 
     def remove_shortlisted_fighter(self, shortlist_box):
         selected = shortlist_box.curselection()
