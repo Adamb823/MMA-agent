@@ -1,18 +1,27 @@
+import random
 import tkinter as tk
 from tkinter import ttk
 
-from generation import generate_scouting_group
-
 # Stuff from my other files that this page needs
-from constants import SCOUTING_GROUP_SIZE, STARTING_MONEY, STAT_KEYS, TRAINING_COST
+from constants import (
+    FIGHT_LOSS_PURSE,
+    FIGHT_WIN_PURSE,
+    LOSSES_BEFORE_RELEASE,
+    SCOUTING_GROUP_SIZE,
+    STARTING_MONEY,
+    STAT_KEYS,
+    TRAINING_COST,
+    WINS_TO_BECOME_CHAMPION,
+)
+from generation import generate_fighter, generate_scouting_group
 
 
 class App(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
 
-        self.title("MMA Agent - Version 3")
-        self.geometry("440x880")
+        self.title("MMA Agent - Version 4")
+        self.geometry("440x950")
 
         # Main game variables
         self.scouted_fighters = generate_scouting_group(SCOUTING_GROUP_SIZE)
@@ -24,6 +33,11 @@ class App(tk.Tk):
         self.week = 1
         self.signed_fighter = None
         self.trained_this_week = False
+
+        # Fight night variables
+        self.wins = 0
+        self.losses = 0
+        self.fought_this_week = False
 
         # Top information
         self.agency_label = ttk.Label(self, text="")
@@ -108,11 +122,19 @@ class App(tk.Tk):
         )
         self.signed_fighter_label.pack(pady=3)
 
+        self.record_label = ttk.Label(agency_frame, text="")
+        self.record_label.pack(pady=(0, 3))
+
         training_text = "Train Fighter ($" + format(TRAINING_COST, ",") + ")"
         train_button = ttk.Button(
             agency_frame, text=training_text, command=self.train_fighter
         )
         train_button.pack(pady=4)
+
+        fight_button = ttk.Button(
+            agency_frame, text="Book a Fight", command=self.book_fight
+        )
+        fight_button.pack(pady=4)
 
         next_week_button = ttk.Button(
             agency_frame, text="Advance Week", command=self.advance_week
@@ -166,6 +188,7 @@ class App(tk.Tk):
 
         if self.signed_fighter is None:
             self.signed_fighter_label.config(text="No fighter signed yet.")
+            self.record_label.config(text="")
         else:
             fighter = self.signed_fighter
 
@@ -174,6 +197,9 @@ class App(tk.Tk):
             signed_text = signed_text + " | " + fighter.weight_class
 
             self.signed_fighter_label.config(text=signed_text)
+
+            record_text = "Record: " + str(self.wins) + "-" + str(self.losses)
+            self.record_label.config(text=record_text)
 
     def previous_fighter(self):
         self.current_fighter_number = self.current_fighter_number - 1
@@ -272,11 +298,67 @@ class App(tk.Tk):
         self.update_fighter_display()
         self.update_agency_display()
 
+    def book_fight(self):
+        if self.signed_fighter is None:
+            self.message_label.config(text="You need to sign a fighter first.")
+            return
+
+        if self.fought_this_week == True:
+            self.message_label.config(text="Your fighter already fought this week.")
+            return
+
+        # Make a random opponent just for this fight, they don't need to be saved anywhere
+        opponent = generate_fighter()
+
+        # Add some randomness on top of the overall rating so favourites can still lose
+        fighter_score = self.signed_fighter.get_overall() + random.randint(-10, 10)
+        opponent_score = opponent.get_overall() + random.randint(-10, 10)
+
+        self.fought_this_week = True
+
+        if fighter_score >= opponent_score:
+            self.wins = self.wins + 1
+            self.money = self.money + FIGHT_WIN_PURSE
+
+            message = self.signed_fighter.name + " beat " + opponent.name
+            message = message + " and earned $" + format(FIGHT_WIN_PURSE, ",") + "."
+
+            # Check for the win condition
+            if self.wins >= WINS_TO_BECOME_CHAMPION:
+                message = self.signed_fighter.name
+                message = message + " just became the CHAMPION! You win the game!"
+
+        else:
+            self.losses = self.losses + 1
+            self.money = self.money + FIGHT_LOSS_PURSE
+
+            message = self.signed_fighter.name + " lost to " + opponent.name
+            message = message + " but still made $" + format(FIGHT_LOSS_PURSE, ",")
+            message = message + " in show money."
+
+            # Too many losses and the fighter gets cut from the agency
+            if self.losses >= LOSSES_BEFORE_RELEASE:
+                released_name = self.signed_fighter.name
+
+                self.signed_fighter = None
+                self.wins = 0
+                self.losses = 0
+
+                message = (
+                    released_name + " was cut from the agency after too many losses."
+                )
+
+        self.message_label.config(text=message)
+        self.update_agency_display()
+
     def advance_week(self):
         self.week = self.week + 1
         self.trained_this_week = False
+        self.fought_this_week = False
 
-        self.message_label.config(text="Week advanced. Your fighter can train again.")
+        self.message_label.config(
+            text="Week advanced. Your fighter can train and fight again."
+        )
         self.update_agency_display()
 
     def open_shortlist_window(self):
